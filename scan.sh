@@ -35,16 +35,29 @@ export USER PASS PREFIX TIMEOUT
 
 seq 1 254 | xargs -P "$PARALLEL" -I{} bash -c '
 ip="$PREFIX".{};
+
+# cek port 22
 if timeout "$TIMEOUT" bash -c "echo >/dev/tcp/$ip/22" 2>/dev/null; then
-  if sshpass -p "$PASS" ssh \
-      -o StrictHostKeyChecking=no \
-      -o UserKnownHostsFile=/dev/null \
-      -o ConnectTimeout=2 \
-      -o LogLevel=ERROR \
-      "$USER@$ip" "exit" 2>/dev/null; then
-    printf "[OK] %s\n" "$ip"
+
+  # ambil hostname + OS
+  INFO=$(sshpass -p "$PASS" ssh \
+    -o StrictHostKeyChecking=no \
+    -o UserKnownHostsFile=/dev/null \
+    -o ConnectTimeout=2 \
+    -o LogLevel=ERROR \
+    "$USER@$ip" "hostname; grep PRETTY_NAME /etc/os-release 2>/dev/null | cut -d= -f2 | tr -d '\"'" 2>/dev/null)
+
+  if [ -n "$INFO" ]; then
+    HOST=$(echo "$INFO" | sed -n '1p')
+    OS=$(echo "$INFO" | sed -n '2p')
+    if [ -n "$OS" ]; then
+      printf "[OK] %s (%s - %s)\n" "$ip" "$HOST" "$OS"
+    else
+      printf "[OK] %s (%s)\n" "$ip" "$HOST"
+    fi
   else
     printf "[FAIL] %s\n" "$ip"
   fi
+
 fi
 '
