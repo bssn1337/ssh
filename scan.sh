@@ -32,7 +32,6 @@ command -v sshpass >/dev/null || { echo "[ERROR] sshpass belum terinstall"; exit
 scan_ip() {
   local ip="$1"
 
-  # cek port
   if timeout "$TIMEOUT" bash -c "echo >/dev/tcp/$ip/$PORT" 2>/dev/null; then
 
     INFO=$(sshpass -p "$PASS" ssh \
@@ -41,10 +40,11 @@ scan_ip() {
       -o UserKnownHostsFile=/dev/null \
       -o ConnectTimeout=2 \
       -o LogLevel=ERROR \
-      "$USER@$ip" '
-        hostname
-        grep PRETTY_NAME /etc/os-release 2>/dev/null | cut -d= -f2 | tr -d "\""
-      ' 2>/dev/null)
+      "$USER@$ip" bash -s <<'EOF' 2>/dev/null
+hostname
+grep PRETTY_NAME /etc/os-release 2>/dev/null | cut -d= -f2 | tr -d '"'
+EOF
+    )
 
     if [ -n "$INFO" ]; then
       HOST=$(echo "$INFO" | sed -n '1p')
