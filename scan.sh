@@ -2,7 +2,8 @@
 set -euo pipefail
 
 usage() {
-  echo "Usage: $0 -i <prefix> -u <user> -p <password> [-o port] [-P parallel] [-t timeout]"
+  echo "Usage: $0 -i <prefix> -u <user> -p <password|-> [-o port] [-P parallel] [-t timeout]"
+  echo "       gunakan -p - untuk input password via stdin"
   exit 1
 }
 
@@ -26,6 +27,12 @@ while getopts ":i:u:p:o:P:t:" opt; do
 done
 
 [[ -z "$PREFIX" || -z "$USER" || -z "$PASS" ]] && usage
+
+# 🔥 kalau password = "-", baca dari stdin (AMAN dari ! $ dll)
+if [[ "$PASS" == "-" ]]; then
+  read -r -s -p "Input SSH Password: " PASS
+  echo ""
+fi
 
 command -v sshpass >/dev/null || { echo "[ERROR] sshpass belum terinstall"; exit 1; }
 
